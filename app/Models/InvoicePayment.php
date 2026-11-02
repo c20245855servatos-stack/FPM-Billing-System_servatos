@@ -25,3 +25,4 @@ class InvoicePayment extends Model
         return $this->belongsTo(Invoice::class);
     }
 }
+
