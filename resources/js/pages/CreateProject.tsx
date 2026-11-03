@@ -1,10 +1,12 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import * as React from 'react';
 import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, FolderKanban, Sparkles, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type Client = {
     id: number;
@@ -21,16 +23,36 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
         name: '',
         client_id: '',
     });
+    const clientForm = useForm({ company_name: '', email: '' });
+    const { flash } = usePage<{ flash: { success?: string } }>().props;
+    const [clientDialogOpen, setClientDialogOpen] = React.useState(false);
 
     const submit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        post('/projects');
+        post('/projects', {
+            onSuccess: () => {
+                setData('name', '');
+                setData('client_id', '');
+            },
+        });
+    };
+
+    const submitClient = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        clientForm.post('/clients', {
+            preserveScroll: true,
+            onSuccess: () => {
+                clientForm.reset();
+                setClientDialogOpen(false);
+                router.reload({ only: ['clients'] });
+            },
+        });
     };
 
     return (
         <>
             <Head title="Create project" />
-            <main className="min-h-screen bg-muted/40">
+            <main className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50/40 to-white dark:from-background dark:via-cyan-950/10 dark:to-background">
                 <header className="border-b bg-background">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
                         <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
@@ -53,7 +75,7 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                             Back to dashboard
                         </Link>
 
-                        <div className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-cyan-100 text-cyan-700 ring-8 ring-cyan-50 dark:bg-cyan-950 dark:text-cyan-300 dark:ring-cyan-950/30">
                             <FolderKanban className="size-6" />
                         </div>
                         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Projects</p>
@@ -96,6 +118,49 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                             </div>
                         </CardHeader>
                         <CardContent>
+                            {flash.success && (
+                                <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+                                    {flash.success}
+                                </div>
+                            )}
+                            <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Add a client</DialogTitle>
+                                        <DialogDescription>Create a client, then select it for this project.</DialogDescription>
+                                    </DialogHeader>
+                                    <form onSubmit={submitClient} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="company_name">Company name</Label>
+                                            <Input
+                                                id="company_name"
+                                                value={clientForm.data.company_name}
+                                                onChange={(event) => clientForm.setData('company_name', event.target.value)}
+                                                aria-invalid={Boolean(clientForm.errors.company_name)}
+                                            />
+                                            {clientForm.errors.company_name && (
+                                                <p className="text-sm font-medium text-destructive">{clientForm.errors.company_name}</p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="client_email">Email</Label>
+                                            <Input
+                                                id="client_email"
+                                                type="email"
+                                                value={clientForm.data.email}
+                                                onChange={(event) => clientForm.setData('email', event.target.value)}
+                                                aria-invalid={Boolean(clientForm.errors.email)}
+                                            />
+                                            {clientForm.errors.email && (
+                                                <p className="text-sm font-medium text-destructive">{clientForm.errors.email}</p>
+                                            )}
+                                        </div>
+                                        <Button type="submit" className="w-full" disabled={clientForm.processing}>
+                                            {clientForm.processing ? 'Adding client…' : 'Add client'}
+                                        </Button>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                             <form onSubmit={submit} className="space-y-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Project name</Label>
@@ -121,10 +186,10 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <Label htmlFor="client_id">Client</Label>
-                                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Button type="button" variant="ghost" size="sm" className="h-auto px-2 text-xs" onClick={() => setClientDialogOpen(true)}>
                                             <Users className="size-3.5" />
-                                            {clients.length} {clients.length === 1 ? 'client' : 'clients'}
-                                        </span>
+                                            Add client
+                                        </Button>
                                     </div>
                                     <Select value={data.client_id} onValueChange={(value) => setData('client_id', value)}>
                                         <SelectTrigger

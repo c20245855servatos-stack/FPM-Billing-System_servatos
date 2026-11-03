@@ -1,5 +1,6 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Link } from '@inertiajs/react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AuthLayoutProps {
     children: React.ReactNode;
@@ -10,25 +11,22 @@ interface AuthLayoutProps {
 
 export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
     return (
-        <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div className="w-full max-w-sm">
-                <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-4">
-                        <Link href={route('home')} className="flex flex-col items-center gap-2 font-medium">
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
-                            </div>
-                            <span className="sr-only">{title}</span>
-                        </Link>
-
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-muted-foreground text-center text-sm">{description}</p>
+        <div className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-cyan-50/50 to-white p-6 md:p-10 dark:from-background dark:via-cyan-950/20 dark:to-background">
+            <Card className="w-full max-w-md border-cyan-100 shadow-xl shadow-cyan-950/5 dark:border-cyan-900">
+                <CardHeader className="items-center text-center">
+                    <Link href={route('home')} className="mb-3 flex flex-col items-center gap-2 font-medium">
+                        <div className="flex size-11 items-center justify-center rounded-full bg-cyan-600 text-white shadow-lg shadow-cyan-600/20">
+                            <AppLogoIcon className="size-6 fill-current" />
                         </div>
-                    </div>
+                        <span className="sr-only">{title}</span>
+                    </Link>
+                    <CardTitle className="text-xl">{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </CardHeader>
+                <CardContent>
                     {children}
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

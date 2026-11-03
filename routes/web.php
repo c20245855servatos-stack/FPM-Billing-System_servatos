@@ -5,7 +5,9 @@ use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Project;
-use App\Services\DomainService;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\InvoiceController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -46,33 +48,13 @@ Route::middleware(['auth'])->group(function () {
                 ]),
         ]);
     })->name('dashboard');
-});
-
-// Show the form
-Route::get('/create-project', function () {
-    return Inertia::render('CreateProject', [
-        'clients' => Client::all() 
-    ]);
-});
-
-// Handle the form submission
-Route::post('/projects', function (\Illuminate\Http\Request $request) {
-    // 1. Validate the data (Notice the unique rule!)
-    $data = $request->validate([
-        'name' => 'required|min:2|unique:projects,name', 
-        'client_id' => 'required|exists:clients,id'
-    ], [
-        // Custom error message
-        'name.unique' => 'This project name already exists in the system.',
-        'name.required' => 'Please enter a project name.'
-    ]);
-
-    // 2. Send to Service Layer
-    $service = new DomainService();
-    $service->createProject($data);
-
-    // 3. Redirect back
-    return redirect('/create-project');
+    Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
+    Route::get('/create-project', [ProjectController::class, 'createInertia'])->name('projects.create');
+    Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::match(['put', 'patch'], '/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+    Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'update']);
+    Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
 });
 
 require __DIR__.'/auth.php';

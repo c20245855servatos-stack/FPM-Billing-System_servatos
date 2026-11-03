@@ -9,7 +9,7 @@ class UpdateProjectRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null;
     }
 
     public function rules(): array
@@ -23,7 +23,9 @@ class UpdateProjectRequest extends FormRequest
                 'min:2',
                 'max:150',
                 // Ensure the name is unique, but ignore the current project's ID
-                Rule::unique('projects', 'name')->ignore($this->route('project')),
+                Rule::unique('projects', 'name')
+                    ->where(fn ($query) => $query->where('client_id', $this->input('client_id', $this->route('project')->client_id)))
+                    ->ignore($this->route('project')),
             ],
         ];
     }

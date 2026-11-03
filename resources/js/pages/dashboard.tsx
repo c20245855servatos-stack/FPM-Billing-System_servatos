@@ -4,7 +4,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CircleDollarSign, FolderKanban, ReceiptText, Users } from 'lucide-react';
+import { ArrowRight, CircleDollarSign, FolderKanban, ReceiptText, TrendingUp, Users } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -56,7 +56,7 @@ export default function Dashboard({ summary, recentInvoices, recentProjects }: P
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="flex flex-1 flex-col gap-6 bg-slate-50/60 p-4 md:p-6 dark:bg-background">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight">Billing overview</h1>
@@ -83,6 +83,30 @@ export default function Dashboard({ summary, recentInvoices, recentProjects }: P
                         </Card>
                     ))}
                 </div>
+
+                <Card className="overflow-hidden border-cyan-200 bg-gradient-to-r from-white via-cyan-50/70 to-white py-0 dark:border-cyan-900 dark:from-background dark:via-cyan-950/30 dark:to-background">
+                    <CardContent className="flex flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300">
+                                <TrendingUp className="size-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold">Project-to-payment flow</p>
+                                <p className="mt-1 text-sm text-muted-foreground">Keep every project moving from setup to collection.</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+                            {['Client', 'Project', 'Milestone', 'Invoice', 'Payment'].map((step, index) => (
+                                <div key={step} className="flex items-center gap-2">
+                                    <Badge variant="outline" className={index === 4 ? 'border-emerald-300 bg-white text-emerald-700 dark:bg-background' : 'bg-white dark:bg-background'}>
+                                        {index + 1}. {step}
+                                    </Badge>
+                                    {index < 4 && <ArrowRight className="size-4 text-cyan-500" />}
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.55fr)]">
                     <Card>

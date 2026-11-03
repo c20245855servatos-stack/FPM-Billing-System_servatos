@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder
             ['client_id' => $sandy->id, 'name' => 'Website Redesign'],
         );
         $acmeWebsite = Project::updateOrCreate(
-            ['client_id' => $acme->id, 'name' => 'Website Redesign'],
+            ['client_id' => $acme->id, 'name' => 'Acme Website Redesign'],
         );
         $betaMobile = Project::updateOrCreate(
             ['client_id' => $beta->id, 'name' => 'Mobile App'],

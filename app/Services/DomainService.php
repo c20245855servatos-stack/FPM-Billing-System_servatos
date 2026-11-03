@@ -72,6 +72,47 @@ class DomainService
     }
 
     /* ============================================================
+     *  MILESTONE OPERATIONS
+     * ============================================================ */
+
+    public function createMilestone(array $data): ProjectMilestone
+    {
+        return DB::transaction(function () use ($data) {
+            return ProjectMilestone::create([
+                'project_id' => (int) $data['project_id'],
+                'title' => trim(strip_tags($data['title'])),
+                'amount' => $this->formatCurrency((float) $data['amount']),
+                'due_date' => $data['due_date'],
+                'status' => 'pending',
+            ]);
+        });
+    }
+
+    public function updateMilestone(ProjectMilestone $milestone, array $data): ProjectMilestone
+    {
+        return DB::transaction(function () use ($milestone, $data) {
+            if (isset($data['project_id'])) {
+                $milestone->project_id = (int) $data['project_id'];
+            }
+            if (isset($data['title'])) {
+                $milestone->title = trim(strip_tags($data['title']));
+            }
+            if (isset($data['amount'])) {
+                $milestone->amount = $this->formatCurrency((float) $data['amount']);
+            }
+            if (isset($data['due_date'])) {
+                $milestone->due_date = $data['due_date'];
+            }
+            if (isset($data['status'])) {
+                $milestone->status = $data['status'];
+            }
+            $milestone->save();
+
+            return $milestone->fresh(['project', 'invoice']);
+        });
+    }
+
+    /* ============================================================
      *  INVOICE OPERATIONS — BUSINESS RULES
      * ============================================================ */
 
@@ -159,8 +200,8 @@ class DomainService
             $payment = InvoicePayment::create([
                 'invoice_id' => $invoice->id,
                 'amount_paid' => $this->formatCurrency($amount),
-                'paid_at' => $data['paid_at'] ?? now(),
-                'method' => $data['method'] ?? 'bank_transfer',
+                'paid_at' => filled($data['paid_at'] ?? null) ? $data['paid_at'] : now(),
+                'method' => filled($data['method'] ?? null) ? $data['method'] : 'bank_transfer',
             ]);
 
             $paid = $invoice->amountPaid();

@@ -15,8 +15,7 @@ return new class extends Migration
             $table->string('name');
             $table->timestamps();
 
-            // Adding an index for faster searching by name
-            $table->index('name');
+            $table->unique(['client_id', 'name']);
         });
     }
 

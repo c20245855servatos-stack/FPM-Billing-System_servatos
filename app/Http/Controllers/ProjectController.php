@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
 use App\Models\Project;
 use App\Services\DomainService;
+use Inertia\Inertia;
 
 class ProjectController extends Controller
 {
@@ -31,12 +32,23 @@ class ProjectController extends Controller
         ]);
     }
 
+    public function createInertia()
+    {
+        return Inertia::render('CreateProject', [
+            'clients' => Client::select('id', 'company_name')->orderBy('company_name')->get(),
+        ]);
+    }
+
     // 3. Validate and delegate to Service
     public function store(StoreProjectRequest $request)
     {
         $project = $this->service->createProject($request->validated());
 
-        return response()->json($project->load('client'), 201);
+        if ($request->expectsJson()) {
+            return response()->json($project->load('client'), 201);
+        }
+
+        return redirect()->route('projects.create')->with('success', 'Project created successfully.');
     }
 
     // 4. Validate and delegate update to Service

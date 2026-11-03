@@ -9,7 +9,7 @@ class StoreProjectRequest extends FormRequest
 {
     public function authorize(): bool 
     { 
-        return true; 
+        return $this->user() !== null;
     }
 
     public function rules(): array
@@ -21,7 +21,7 @@ class StoreProjectRequest extends FormRequest
                 'string', 
                 'min:2', 
                 'max:150',
-                Rule::unique('projects', 'name') // <-- This checks the database!
+                Rule::unique('projects')->where(fn ($query) => $query->where('client_id', $this->input('client_id')))
             ],
         ];
     }
