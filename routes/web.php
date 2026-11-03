@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Project;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ProjectMilestoneController;
 use App\Http\Controllers\InvoiceController;
 
 Route::get('/', function () {
@@ -53,6 +54,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
     Route::match(['put', 'patch'], '/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+    Route::resource('clients', ClientController::class)->except(['store'])->only(['index', 'create', 'update']);
+    Route::resource('milestones', ProjectMilestoneController::class)->except(['show', 'destroy']);
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'update']);
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
 });

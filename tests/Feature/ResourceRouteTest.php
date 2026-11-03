@@ -35,4 +35,21 @@ class ResourceRouteTest extends TestCase
             ->getJson(route('invoices.create'))
             ->assertOk();
     }
+
+    public function test_client_and_milestone_routes_are_available_to_authenticated_users(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson(route('clients.index'))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->getJson(route('milestones.index'))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->getJson(route('milestones.create'))
+            ->assertOk();
+    }
 }
