@@ -7,11 +7,11 @@ use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Invoice;
 use App\Models\ProjectMilestone;
-use App\Services\DomainService;
+use App\Services\InvoiceService;
 
 class InvoiceController extends Controller
 {
-    public function __construct(private DomainService $service) {}
+    public function __construct(private InvoiceService $service) {}
 
     // Eager-load milestone, its project, the client, and payments
     public function index()

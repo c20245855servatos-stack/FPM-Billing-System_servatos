@@ -6,13 +6,13 @@ use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
 use App\Models\Project;
-use App\Services\DomainService;
+use App\Services\ProjectService;
 use Inertia\Inertia;
 
 class ProjectController extends Controller
 {
     // Inject the Service into the controller
-    public function __construct(private DomainService $service) {}
+    public function __construct(private ProjectService $service) {}
 
     // 1. Retrieve paginated records with eager-loaded relationships
     public function index()

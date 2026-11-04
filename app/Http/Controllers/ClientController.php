@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
-use App\Services\DomainService;
+use App\Services\ClientService;
 
 class ClientController extends Controller
 {
-    public function __construct(private DomainService $service) {}
+    public function __construct(private ClientService $service) {}
 
     public function index()
     {

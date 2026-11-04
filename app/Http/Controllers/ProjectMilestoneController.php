@@ -6,11 +6,11 @@ use App\Http\Requests\StoreProjectMilestoneRequest;
 use App\Http\Requests\UpdateProjectMilestoneRequest;
 use App\Models\Project;
 use App\Models\ProjectMilestone;
-use App\Services\DomainService;
+use App\Services\ProjectMilestoneService;
 
 class ProjectMilestoneController extends Controller
 {
-    public function __construct(private DomainService $service) {}
+    public function __construct(private ProjectMilestoneService $service) {}
 
     public function index()
     {

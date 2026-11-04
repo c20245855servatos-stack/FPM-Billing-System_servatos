@@ -2,40 +2,29 @@
 
 namespace App\Services;
 
-use App\Models\Invoice;
 use App\Models\Client;
-use App\Models\InvoicePayment;
 use App\Models\Project;
 use App\Models\ProjectMilestone;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
+use App\Models\Invoice;
+use App\Models\InvoicePayment;
 
 class DomainService
 {
+    public function __construct(
+        private ClientService $clients,
+        private ProjectService $projects,
+        private ProjectMilestoneService $milestones,
+        private InvoiceService $invoices,
+    ) {}
+
     public function createClient(array $data): Client
     {
-        return DB::transaction(function () use ($data) {
-            return Client::create([
-                'company_name' => trim(strip_tags($data['company_name'])),
-                'email' => $this->sanitizeEmail($data['email']),
-            ]);
-        });
+        return $this->clients->createClient($data);
     }
 
     public function updateClient(Client $client, array $data): Client
     {
-        return DB::transaction(function () use ($data, $client) {
-            if (isset($data['company_name'])) {
-                $client->company_name = trim(strip_tags($data['company_name']));
-            }
-            if (isset($data['email'])) {
-                $client->email = $this->sanitizeEmail($data['email']);
-            }
-            $client->save();
-
-            return $client->fresh();
-        });
+        return $this->clients->updateClient($client, $data);
     }
 
     /* ============================================================
@@ -44,31 +33,12 @@ class DomainService
 
     public function createProject(array $data): Project
     {
-        return DB::transaction(function () use ($data) {
-            return Project::create($this->sanitizeProject($data));
-        });
+        return $this->projects->createProject($data);
     }
 
     public function updateProject(Project $project, array $data): Project
     {
-        return DB::transaction(function () use ($project, $data) {
-            $project->update($this->sanitizeProject($data));
-
-            return $project->fresh();
-        });
-    }
-
-    private function sanitizeProject(array $data): array
-    {
-        $clean = [];
-        if (isset($data['client_id'])) {
-            $clean['client_id'] = (int) $data['client_id'];
-        }
-        if (isset($data['name'])) {
-            $clean['name'] = trim(strip_tags($data['name']));
-        }
-
-        return $clean;
+        return $this->projects->updateProject($project, $data);
     }
 
     /* ============================================================
@@ -77,39 +47,12 @@ class DomainService
 
     public function createMilestone(array $data): ProjectMilestone
     {
-        return DB::transaction(function () use ($data) {
-            return ProjectMilestone::create([
-                'project_id' => (int) $data['project_id'],
-                'title' => trim(strip_tags($data['title'])),
-                'amount' => $this->formatCurrency((float) $data['amount']),
-                'due_date' => $data['due_date'],
-                'status' => 'pending',
-            ]);
-        });
+        return $this->milestones->createMilestone($data);
     }
 
     public function updateMilestone(ProjectMilestone $milestone, array $data): ProjectMilestone
     {
-        return DB::transaction(function () use ($milestone, $data) {
-            if (isset($data['project_id'])) {
-                $milestone->project_id = (int) $data['project_id'];
-            }
-            if (isset($data['title'])) {
-                $milestone->title = trim(strip_tags($data['title']));
-            }
-            if (isset($data['amount'])) {
-                $milestone->amount = $this->formatCurrency((float) $data['amount']);
-            }
-            if (isset($data['due_date'])) {
-                $milestone->due_date = $data['due_date'];
-            }
-            if (isset($data['status'])) {
-                $milestone->status = $data['status'];
-            }
-            $milestone->save();
-
-            return $milestone->fresh(['project', 'invoice']);
-        });
+        return $this->milestones->updateMilestone($milestone, $data);
     }
 
     /* ============================================================
@@ -118,104 +61,17 @@ class DomainService
 
     public function createInvoice(array $data): Invoice
     {
-        return DB::transaction(function () use ($data) {
-            $milestone = ProjectMilestone::findOrFail($data['milestone_id']);
-
-            if ($milestone->invoice()->exists()) {
-                throw ValidationException::withMessages([
-                    'milestone_id' => ['This milestone has already been invoiced.'],
-                ]);
-            }
-
-            $taxRate = (float) $data['tax_rate'];
-            $subtotal = (float) $milestone->amount;
-            $taxAmt = round($subtotal * $taxRate, 2);
-            $totalDue = round($subtotal + $taxAmt, 2);
-
-            $invoice = Invoice::create([
-                'milestone_id' => $milestone->id,
-                'tax_rate' => $taxRate,
-                'tax_amount' => $this->formatCurrency($taxAmt),
-                'total_amount_due' => $this->formatCurrency($totalDue),
-                'status' => 'unpaid',
-            ]);
-
-            $milestone->update(['status' => 'invoiced']);
-
-            return $invoice;
-        });
+        return $this->invoices->createInvoice($data);
     }
 
     public function updateInvoice(Invoice $invoice, array $data): Invoice
     {
-        return DB::transaction(function () use ($invoice, $data) {
-            $payload = [];
-
-            if (isset($data['tax_rate'])) {
-                $taxRate = (float) $data['tax_rate'];
-                $subtotal = (float) $invoice->milestone->amount;
-                $taxAmt = round($subtotal * $taxRate, 2);
-                $totalDue = round($subtotal + $taxAmt, 2);
-
-                $payload['tax_rate'] = $taxRate;
-                $payload['tax_amount'] = $this->formatCurrency($taxAmt);
-                $payload['total_amount_due'] = $this->formatCurrency($totalDue);
-            }
-
-            if (isset($data['status'])) {
-                $payload['status'] = $data['status'];
-            }
-
-            $invoice->update($payload);
-
-            // Business rule: update milestone status when invoice is paid
-            if (($payload['status'] ?? null) === 'paid') {
-                $invoice->milestone->update(['status' => 'paid']);
-            }
-
-            return $invoice->fresh(['milestone', 'payments']);
-        });
+        return $this->invoices->updateInvoice($invoice, $data);
     }
 
     public function recordPayment(Invoice $invoice, array $data): InvoicePayment
     {
-        return DB::transaction(function () use ($invoice, $data) {
-            $invoice = Invoice::query()
-                ->lockForUpdate()
-                ->findOrFail($invoice->id);
-            $amount = round((float) $data['amount_paid'], 2);
-            $balance = (float) $invoice->balanceDue();
-
-            if ($amount <= 0) {
-                throw ValidationException::withMessages([
-                    'amount_paid' => ['Payment amount must be greater than zero.'],
-                ]);
-            }
-            if ($amount > $balance + 0.001) {
-                throw ValidationException::withMessages([
-                    'amount_paid' => ['Payment amount cannot exceed the invoice balance.'],
-                ]);
-            }
-
-            $payment = InvoicePayment::create([
-                'invoice_id' => $invoice->id,
-                'amount_paid' => $this->formatCurrency($amount),
-                'paid_at' => filled($data['paid_at'] ?? null) ? $data['paid_at'] : now(),
-                'method' => filled($data['method'] ?? null) ? $data['method'] : 'bank_transfer',
-            ]);
-
-            $paid = $invoice->amountPaid();
-            $due = (float) $invoice->total_amount_due;
-
-            if ($paid >= $due) {
-                $invoice->update(['status' => 'paid']);
-                $invoice->milestone->update(['status' => 'paid']);   // business rule
-            } elseif ($paid > 0) {
-                $invoice->update(['status' => 'partial']);
-            }
-
-            return $payment;
-        });
+        return $this->invoices->recordPayment($invoice, $data);
     }
 
     /* ============================================================
@@ -224,7 +80,7 @@ class DomainService
 
     public function sanitizeEmail(string $email): string
     {
-        return Str::lower(trim($email));
+        return $this->clients->sanitizeEmail($email);
     }
 
     public function formatCurrency(float $value): float
