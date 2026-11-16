@@ -13,7 +13,7 @@ class Client extends Model
     protected function email(): Attribute
     {
         return Attribute::make(
-            set: fn (string $value) => strtolower(trim($value)),
+            set: fn (string $value) => strtolower(trim(strip_tags($value))),
         );
     }
 

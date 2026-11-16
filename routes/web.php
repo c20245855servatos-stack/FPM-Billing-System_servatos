@@ -14,6 +14,7 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+// ─── Shared authenticated routes (all roles) ────────────────────────────────
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function () {
         $invoices = Invoice::with(['milestone.project.client'])
@@ -49,13 +50,20 @@ Route::middleware(['auth'])->group(function () {
                 ]),
         ]);
     })->name('dashboard');
+});
+
+// ─── Admin-only routes (Freelancer) ─────────────────────────────────────────
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/create-project', [ProjectController::class, 'createInertia'])->name('projects.create');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
     Route::match(['put', 'patch'], '/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
     Route::resource('clients', ClientController::class)->except(['store'])->only(['index', 'create', 'update']);
+
     Route::resource('milestones', ProjectMilestoneController::class)->except(['show', 'destroy']);
+
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'update']);
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
 });

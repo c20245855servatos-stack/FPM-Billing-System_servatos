@@ -18,11 +18,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Admin account — Freelancer (full system access)
+        User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Freelancer Admin',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'email_verified_at' => now(),
+            ],
+        );
+
+        // User account — Client company (read-only / limited access)
+        User::updateOrCreate(
+            ['email' => 'client@example.com'],
+            [
+                'name' => 'Client User',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'email_verified_at' => now(),
+            ],
+        );
+
+        // Legacy test user kept for backwards compatibility
         User::updateOrCreate(
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
                 'password' => Hash::make('password'),
+                'role' => 'admin',
                 'email_verified_at' => now(),
             ],
         );

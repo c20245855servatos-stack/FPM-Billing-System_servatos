@@ -57,14 +57,12 @@ class InvoiceService
             }
 
             if (isset($data['status'])) {
+                $this->assertValidStatusTransition($invoice, $data['status']);
                 $payload['status'] = $data['status'];
             }
 
             $invoice->update($payload);
-
-            if (($payload['status'] ?? null) === 'paid') {
-                $invoice->milestone->update(['status' => 'paid']);
-            }
+            $this->syncMilestoneStatus($invoice);
 
             return $invoice->fresh(['milestone', 'payments']);
         });
@@ -97,18 +95,59 @@ class InvoiceService
                 'method' => filled($data['method'] ?? null) ? $data['method'] : 'bank_transfer',
             ]);
 
-            $paid = $invoice->amountPaid();
-            $due = (float) $invoice->total_amount_due;
+            $invoice->refresh();
+            $invoice->update(['status' => $this->resolveInvoiceStatus($invoice)]);
+            $this->syncMilestoneStatus($invoice);
 
-            if ($paid >= $due) {
-                $invoice->update(['status' => 'paid']);
-                $invoice->milestone->update(['status' => 'paid']);
-            } elseif ($paid > 0) {
-                $invoice->update(['status' => 'partial']);
-            }
-
-            return $payment;
+            return $payment->fresh();
         });
+    }
+
+    private function assertValidStatusTransition(Invoice $invoice, string $status): void
+    {
+        $amountPaid = (float) $invoice->amountPaid();
+        $totalDue = (float) $invoice->total_amount_due;
+
+        if ($status === 'paid' && $amountPaid + 0.001 < $totalDue) {
+            throw ValidationException::withMessages([
+                'status' => ['Invoice cannot be marked paid until the full balance is paid.'],
+            ]);
+        }
+
+        if ($status === 'partial' && $amountPaid <= 0) {
+            throw ValidationException::withMessages([
+                'status' => ['Invoice can only be marked partial when a payment has been received.'],
+            ]);
+        }
+    }
+
+    private function resolveInvoiceStatus(Invoice $invoice): string
+    {
+        $amountPaid = (float) $invoice->amountPaid();
+        $totalDue = (float) $invoice->total_amount_due;
+
+        if ($amountPaid >= $totalDue) {
+            return 'paid';
+        }
+
+        if ($amountPaid > 0) {
+            return 'partial';
+        }
+
+        return 'unpaid';
+    }
+
+    private function syncMilestoneStatus(Invoice $invoice): void
+    {
+        if (! $invoice->relationLoaded('milestone') && ! $invoice->milestone()->exists()) {
+            return;
+        }
+
+        $status = (float) $invoice->amountPaid() >= (float) $invoice->total_amount_due
+            ? 'paid'
+            : 'invoiced';
+
+        $invoice->milestone->update(['status' => $status]);
     }
 
     private function formatCurrency(float $value): float

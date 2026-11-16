@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -45,5 +46,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /** Freelancer — full system access. */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /** Client company — restricted access. */
+    public function isUser(): bool
+    {
+        return $this->role === 'user';
     }
 }

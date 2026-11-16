@@ -36,6 +36,6 @@ class ClientService
 
     public function sanitizeEmail(string $email): string
     {
-        return Str::lower(trim($email));
+        return Str::lower(trim(strip_tags($email)));
     }
 }

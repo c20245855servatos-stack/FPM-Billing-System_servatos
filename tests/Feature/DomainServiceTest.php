@@ -70,6 +70,19 @@ class DomainServiceTest extends TestCase
         $service->recordPayment($invoice, ['amount_paid' => 101]);
     }
 
+    public function test_invoice_cannot_be_marked_paid_without_full_payment(): void
+    {
+        $service = app(DomainService::class);
+        $invoice = $service->createInvoice([
+            'milestone_id' => $this->createMilestone(100)->id,
+            'tax_rate' => 0,
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        $service->updateInvoice($invoice, ['status' => 'paid']);
+    }
+
     private function createMilestone(float $amount): ProjectMilestone
     {
         $client = Client::create([
