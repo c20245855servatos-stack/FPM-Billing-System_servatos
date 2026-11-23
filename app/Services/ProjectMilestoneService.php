@@ -9,6 +9,7 @@ class ProjectMilestoneService
 {
     public function createMilestone(array $data): ProjectMilestone
     {
+        //NO SANITIZATION
         return DB::transaction(function () use ($data) {
             return ProjectMilestone::create([
                 'project_id' => (int) $data['project_id'],

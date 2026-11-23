@@ -103,6 +103,55 @@ class InvoiceService
         });
     }
 
+    public function updatePayment(
+        Invoice $invoice,
+        InvoicePayment $payment,
+        array $data,
+    ): InvoicePayment {
+        return DB::transaction(function () use ($invoice, $payment, $data) {
+            if ((int) $payment->invoice_id !== (int) $invoice->id) {
+                throw ValidationException::withMessages([
+                    'payment' => ['This payment does not belong to the selected invoice.'],
+                ]);
+            }
+
+            $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
+            $payment = InvoicePayment::query()->lockForUpdate()->findOrFail($payment->id);
+
+            $payload = [];
+            if (isset($data['amount_paid'])) {
+                $amount = round((float) $data['amount_paid'], 2);
+                $adjustedBalance = (float) $invoice->balanceDue()
+                    + (float) $payment->amount_paid;
+
+                if ($amount <= 0) {
+                    throw ValidationException::withMessages([
+                        'amount_paid' => ['Payment amount must be greater than zero.'],
+                    ]);
+                }
+                if ($amount > $adjustedBalance + 0.001) {
+                    throw ValidationException::withMessages([
+                        'amount_paid' => ['Payment amount cannot exceed the invoice balance.'],
+                    ]);
+                }
+                $payload['amount_paid'] = $this->formatCurrency($amount);
+            }
+            if (array_key_exists('paid_at', $data)) {
+                $payload['paid_at'] = filled($data['paid_at']) ? $data['paid_at'] : now();
+            }
+            if (isset($data['method'])) {
+                $payload['method'] = $data['method'];
+            }
+
+            $payment->update($payload);
+            $invoice->refresh();
+            $invoice->update(['status' => $this->resolveInvoiceStatus($invoice)]);
+            $this->syncMilestoneStatus($invoice);
+
+            return $payment->fresh();
+        });
+    }
+
     private function assertValidStatusTransition(Invoice $invoice, string $status): void
     {
         $amountPaid = (float) $invoice->amountPaid();

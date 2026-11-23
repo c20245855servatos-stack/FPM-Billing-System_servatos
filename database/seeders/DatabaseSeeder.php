@@ -46,7 +46,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => Hash::make('password'),
-                'role' => 'admin',
+                'role' => 'user',
                 'email_verified_at' => now(),
             ],
         );
@@ -107,15 +107,15 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        $this->seedInvoice($createdMilestones[0], 0.10, 'paid', [
+        $this->seedInvoice($createdMilestones[0], 0.12, 'paid', [
             ['amount_paid' => 5500, 'paid_at' => '2026-10-25'],
             ['amount_paid' => 5500, 'paid_at' => '2026-10-26'],
         ]);
-        $this->seedInvoice($createdMilestones[1], 0.10, 'unpaid');
+        $this->seedInvoice($createdMilestones[1], 0.12, 'unpaid');
         $this->seedInvoice($createdMilestones[2], 0.05, 'paid', [
             ['amount_paid' => 1575, 'paid_at' => '2026-10-26'],
         ]);
-        $this->seedInvoice($createdMilestones[3], 0.10, 'paid', [
+        $this->seedInvoice($createdMilestones[3], 0.12, 'paid', [
             ['amount_paid' => 1100, 'paid_at' => '2026-10-26'],
         ]);
     }

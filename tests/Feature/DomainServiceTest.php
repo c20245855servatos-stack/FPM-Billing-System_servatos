@@ -25,6 +25,22 @@ class DomainServiceTest extends TestCase
         $this->assertSame('example@gmail.com', $client->email);
     }
 
+    public function test_project_price_is_stored(): void
+    {
+        $client = Client::create([
+            'company_name' => 'Price Test Client',
+            'email' => 'price@example.com',
+        ]);
+
+        $project = app(DomainService::class)->createProject([
+            'client_id' => $client->id,
+            'name' => 'Priced Project',
+            'price' => 12500.50,
+        ]);
+
+        $this->assertEquals('12500.50', $project->price);
+    }
+
     public function test_invoice_tax_and_total_are_calculated_in_the_service(): void
     {
         $milestone = $this->createMilestone(1500);
@@ -81,6 +97,32 @@ class DomainServiceTest extends TestCase
         $this->expectException(ValidationException::class);
 
         $service->updateInvoice($invoice, ['status' => 'paid']);
+    }
+
+    public function test_admin_can_edit_payment_and_status_resynchronizes(): void
+    {
+        $service = app(DomainService::class);
+        $milestone = $this->createMilestone(100);
+        $invoice = $service->createInvoice([
+            'milestone_id' => $milestone->id,
+            'tax_rate' => 0,
+        ]);
+        $payment = $service->recordPayment($invoice, [
+            'amount_paid' => 50,
+            'paid_at' => '2026-11-18',
+            'method' => 'bank_transfer',
+        ]);
+
+        $updated = $service->updatePayment($invoice, $payment, [
+            'amount_paid' => 100,
+            'paid_at' => '2026-11-18',
+            'method' => 'gcash',
+        ]);
+
+        $this->assertEquals('100.00', $updated->amount_paid);
+        $this->assertSame('gcash', $updated->method);
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $this->assertSame('paid', $milestone->fresh()->status);
     }
 
     private function createMilestone(float $amount): ProjectMilestone

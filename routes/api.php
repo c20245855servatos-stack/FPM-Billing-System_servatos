@@ -8,11 +8,9 @@ use App\Http\Controllers\ProjectMilestoneController;
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::apiResource('projects', ProjectController::class)
-        ->only(['index', 'create', 'store', 'update'])
+        ->only(['index', 'update'])
         ->names([
             'index'  => 'api.projects.index',
-            'create' => 'api.projects.create',
-            'store'  => 'api.projects.store',
             'update' => 'api.projects.update',
         ]);
 
@@ -45,4 +43,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])
         ->name('api.invoices.payments.store');
+    Route::patch('invoices/{invoice}/payments/{payment}', [InvoiceController::class, 'updatePayment'])
+        ->name('api.invoices.payments.update');
+});
+
+Route::middleware(['auth', 'role:user'])->group(function () {
+    Route::apiResource('projects', ProjectController::class)
+        ->only(['create', 'store'])
+        ->names([
+            'create' => 'api.projects.create',
+            'store'  => 'api.projects.store',
+        ]);
 });

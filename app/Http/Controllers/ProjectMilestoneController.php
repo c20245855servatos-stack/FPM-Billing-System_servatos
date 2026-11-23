@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProjectMilestoneRequest;
 use App\Models\Project;
 use App\Models\ProjectMilestone;
 use App\Services\ProjectMilestoneService;
+use Illuminate\Http\RedirectResponse;
 
 class ProjectMilestoneController extends Controller
 {
@@ -38,5 +39,22 @@ class ProjectMilestoneController extends Controller
         $updated = $this->service->updateMilestone($milestone, $request->validated());
 
         return response()->json($updated->load(['project.client', 'invoice']));
+    }
+
+    /**
+     * Admin-only: update just the status of a milestone.
+     * Used by the inline status dropdown on the Projects page.
+     */
+    public function updateStatus(ProjectMilestone $milestone): RedirectResponse
+    {
+        request()->validate([
+            'status' => ['required', 'string', 'in:pending,invoiced,paid'],
+        ]);
+
+        $this->service->updateMilestone($milestone, [
+            'status' => request()->input('status'),
+        ]);
+
+        return redirect()->back()->with('success', 'Milestone status updated.');
     }
 }

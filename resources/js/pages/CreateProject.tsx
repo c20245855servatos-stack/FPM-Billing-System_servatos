@@ -1,12 +1,11 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import * as React from 'react';
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, FolderKanban, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, FolderKanban, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { type SharedData } from '@/types';
 
 type Client = {
     id: number;
@@ -15,36 +14,28 @@ type Client = {
 
 type ProjectForm = {
     name: string;
-    client_id: string;
+    price: string;
+    description: string;
+    default_tax_rate: string;
 };
 
 export default function CreateProject({ clients }: { clients: Client[] }) {
     const { data, setData, post, processing, errors } = useForm<ProjectForm>({
         name: '',
-        client_id: '',
+        price: '',
+        description: '',
+        default_tax_rate: '12',
     });
-    const clientForm = useForm({ company_name: '', email: '' });
-    const { flash } = usePage<{ flash: { success?: string } }>().props;
-    const [clientDialogOpen, setClientDialogOpen] = React.useState(false);
+    const { flash } = usePage<SharedData & { flash: { success?: string } }>().props;
 
     const submit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         post('/projects', {
             onSuccess: () => {
                 setData('name', '');
-                setData('client_id', '');
-            },
-        });
-    };
-
-    const submitClient = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        clientForm.post('/clients', {
-            preserveScroll: true,
-            onSuccess: () => {
-                clientForm.reset();
-                setClientDialogOpen(false);
-                router.reload({ only: ['clients'] });
+                setData('price', '');
+                setData('description', '');
+                setData('default_tax_rate', '12');
             },
         });
     };
@@ -81,7 +72,7 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Projects</p>
                         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Give your next project a home.</h1>
                         <p className="mt-5 max-w-lg text-lg leading-8 text-muted-foreground">
-                            Create a workspace for the work you do for a client. You can manage project billing from here as your work grows.
+                            Create a project for your company and keep its billing details organized as your work grows.
                         </p>
 
                         <div className="mt-10 space-y-5">
@@ -95,8 +86,8 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                             <div className="flex gap-4">
                                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-background text-sm font-semibold">2</span>
                                 <div>
-                                    <p className="font-medium">Connect a client</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">Keep project work organized with the right client.</p>
+                                    <p className="font-medium">Set your project price</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">Your project will be linked to your client account.</p>
                                 </div>
                             </div>
                         </div>
@@ -123,44 +114,6 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                                     {flash.success}
                                 </div>
                             )}
-                            <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Add a client</DialogTitle>
-                                        <DialogDescription>Create a client, then select it for this project.</DialogDescription>
-                                    </DialogHeader>
-                                    <form onSubmit={submitClient} className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="company_name">Company name</Label>
-                                            <Input
-                                                id="company_name"
-                                                value={clientForm.data.company_name}
-                                                onChange={(event) => clientForm.setData('company_name', event.target.value)}
-                                                aria-invalid={Boolean(clientForm.errors.company_name)}
-                                            />
-                                            {clientForm.errors.company_name && (
-                                                <p className="text-sm font-medium text-destructive">{clientForm.errors.company_name}</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="client_email">Email</Label>
-                                            <Input
-                                                id="client_email"
-                                                type="email"
-                                                value={clientForm.data.email}
-                                                onChange={(event) => clientForm.setData('email', event.target.value)}
-                                                aria-invalid={Boolean(clientForm.errors.email)}
-                                            />
-                                            {clientForm.errors.email && (
-                                                <p className="text-sm font-medium text-destructive">{clientForm.errors.email}</p>
-                                            )}
-                                        </div>
-                                        <Button type="submit" className="w-full" disabled={clientForm.processing}>
-                                            {clientForm.processing ? 'Adding client…' : 'Add client'}
-                                        </Button>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
                             <form onSubmit={submit} className="space-y-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Project name</Label>
@@ -184,37 +137,65 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="client_id">Client</Label>
-                                        <Button type="button" variant="ghost" size="sm" className="h-auto px-2 text-xs" onClick={() => setClientDialogOpen(true)}>
-                                            <Users className="size-3.5" />
-                                            Add client
-                                        </Button>
+                                    <Label htmlFor="price">Project price</Label>
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">₱</span>
+                                        <Input
+                                            id="price"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={data.price}
+                                            onChange={(event) => {
+                                                const val = event.target.value;
+                                                if (val.includes('.') && val.split('.')[1].length > 2) return;
+                                                setData('price', val);
+                                            }}
+                                            onKeyDown={(event) => {
+                                                const val = data.price;
+                                                if (
+                                                    val.includes('.') &&
+                                                    val.split('.')[1].length >= 2 &&
+                                                    /^\d$/.test(event.key) &&
+                                                    !event.ctrlKey && !event.metaKey &&
+                                                    event.key !== 'Backspace' && event.key !== 'Delete' &&
+                                                    event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' &&
+                                                    event.key !== 'Tab'
+                                                ) {
+                                                    event.preventDefault();
+                                                }
+                                            }}
+                                            placeholder="0.00"
+                                            aria-invalid={Boolean(errors.price)}
+                                            className="h-11 pl-8"
+                                        />
                                     </div>
-                                    <Select value={data.client_id} onValueChange={(value) => setData('client_id', value)}>
-                                        <SelectTrigger
-                                            id="client_id"
-                                            aria-invalid={Boolean(errors.client_id)}
-                                            aria-describedby={errors.client_id ? 'client-error' : undefined}
-                                            className="h-11"
-                                        >
-                                            <SelectValue placeholder="Choose a client" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {clients.map((client) => (
-                                                <SelectItem key={client.id} value={String(client.id)}>
-                                                    {client.company_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.client_id && (
-                                        <p id="client-error" className="text-sm font-medium text-destructive">
-                                            {errors.client_id}
-                                        </p>
+                                    {errors.price && (
+                                        <p className="text-sm font-medium text-destructive">{errors.price}</p>
                                     )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="client_account">Client account</Label>
+                                    <Input id="client_account" value={clients[0]?.company_name ?? 'No client account found'} disabled className="h-11" />
                                     {clients.length === 0 && (
-                                        <p className="text-sm text-muted-foreground">No clients are available yet. Add a client before creating a project.</p>
+                                        <p className="text-sm text-destructive">Your login email is not linked to a client account. Contact your administrator to set it up.</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                    <textarea
+                                        id="description"
+                                        rows={3}
+                                        value={data.description}
+                                        onChange={(event) => setData('description', event.target.value)}
+                                        placeholder="Describe the project scope, deliverables, or any notes for the admin..."
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                                        aria-invalid={Boolean(errors.description)}
+                                    />
+                                    {errors.description && (
+                                        <p className="text-sm font-medium text-destructive">{errors.description}</p>
                                     )}
                                 </div>
 
@@ -224,7 +205,7 @@ export default function CreateProject({ clients }: { clients: Client[] }) {
                                             <Check className="size-4" />
                                         </span>
                                         <p className="text-sm leading-6 text-muted-foreground">
-                                            Your project will be linked to the selected client, keeping billing details together.
+                                            Your project will be linked to your client account, keeping billing details together.
                                         </p>
                                     </div>
                                 </div>

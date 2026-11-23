@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Client;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,6 +46,8 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'role' => $request->user()?->role,
+                'hasProjects' => fn () => $request->user()?->isUser()
+                    && Client::where('email', $request->user()->email)->whereHas('projects')->exists(),
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

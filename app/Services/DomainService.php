@@ -74,6 +74,14 @@ class DomainService
         return $this->invoices->recordPayment($invoice, $data);
     }
 
+    public function updatePayment(
+        Invoice $invoice,
+        InvoicePayment $payment,
+        array $data,
+    ): InvoicePayment {
+        return $this->invoices->updatePayment($invoice, $payment, $data);
+    }
+
     /* ============================================================
      *  SANITIZATION HELPERS
      * ============================================================ */
